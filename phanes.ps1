@@ -1,9 +1,15 @@
+param (
+    [string]$DCIP,
+    [string]$Path,
+    [string]$Flags
+)
+
+
 function upload{
 
-    
     # Define the share name and folder path
     $ShareName = "Scripts"
-    $FolderPath = "C:\Users\dcc\OneDrive - Abertay University\CMP400 - Diss\Scripts"
+    $FolderPath = "$Path"
 
     # Set NTFS permissions to allow Everyone full control
     $Acl = Get-Acl $FolderPath
@@ -16,10 +22,12 @@ function upload{
 
     Write-Host "SMB share created"
     
-    #.\sysinternals\psexec.exe \\192.168.18.149 -i -h -u "FAKECOMPANY.LOCAL\Administrator" -p "Admin123!" powershell -Command "cmd /c 'copy /y \\192.168.18.1\Scripts\upload\* C:\Users\Administrator\\Desktop\Scripts;ls'"
-    .\sysinternals\psexec.exe \\192.168.18.149 -i -h -u "FAKECOMPANY.LOCAL\Administrator" -p "Admin123!" powershell -Command 'Import-Module C:\Users\Administrator\Desktop\Scripts\ad_genUser.ps1; Invoke-ADGen -All:$true'
+    #.\sysinternals\psexec.exe \\$DCIP -i -h -u "FAKECOMPANY.LOCAL\Administrator" -p "Admin123!" powershell -Command "cmd /c 'copy /y \\192.168.18.1\Scripts\upload\* C:\Users\Administrator\\Desktop\Scripts;ls'"
+    .\sysinternals\psexec.exe \\$DCIP -i -h -u "FAKECOMPANY.LOCAL\Administrator" -p "Admin123!" powershell -Command 'Import-Module C:\Users\Administrator\Desktop\Scripts\ad_genUser.ps1; Invoke-ADGen $Flags'
     Remove-SmbShare -Name "Scripts" -Force 
     Write-Host "DONE"
+    
 }
 
 upload
+#Write-Host $DCIP" + "$Path" + "$Flags
