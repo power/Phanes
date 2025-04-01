@@ -1,4 +1,4 @@
-function uploadMe{
+function upload{
 
     
     # Define the share name and folder path
@@ -22,4 +22,4 @@ function uploadMe{
     Write-Host "DONE"
 }
 
-uploadMe
+upload
