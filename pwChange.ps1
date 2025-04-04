@@ -14,9 +14,9 @@ $rand_num = Get-Random -Minimum 0 -Maximum 100
 $temp_pw = $Global:Passwords[$rand_num] # pick a random password
 $temp_user = $Global:SAM_Names[$temp_num] # pick a random user
 $secure_pw = ConvertTo-SecureString -String $temp_pw -AsPlainText -Force # convert it to secure string
-Set-ADAccountPassword -Identity $Global:SAM_Names[$temp_num] -NewPassword $secure_pw # change the users password
+Set-ADAccountPassword -Identity $temp_user -NewPassword $secure_pw # change the users password
 
 
 $currentTime = Get-Date -Format "dddd MM/dd/yyyy HH:mm" # get the current time
-Set-ADUser $Global:SAM_Names[$temp_num] -Description "Password updated to $temp_pw as of  $currentTime" # add a sign so an attacker could see
-# Out-File -FilePath "C:\\Users\\Administrator\\Desktop\\Scripts\\output.txt" -InputObject "$temp_user had password changed to $temp_pw" <----- debugging
+Set-ADUser $temp_user -Description "Password updated to $temp_pw as of  $currentTime" # add a sign so an attacker could see
+Out-File -FilePath "C:\\Users\\Administrator\\Desktop\\Scripts\\output.txt" -InputObject "$temp_user had password changed to $temp_pw" #<----- debugging

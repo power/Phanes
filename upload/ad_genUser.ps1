@@ -28,11 +28,8 @@ function jsonify($name, $par, $value){
     $a | ConvertTo-Json -depth 32| set-content 'C:\Users\Administrator\Desktop\Scripts\vulns.json'
 }
 function randomUserGen($temp_accounts) {
-    for ($i=1; $i -le 2; $i=$i+1)
-    {
-        $temp_num = Get-Random -Minimum 0 -Maximum $temp_accounts.Count
-        $temp_sid = $temp_accounts[$temp_num]
-    }
+    $temp_num = Get-Random -Minimum 0 -Maximum $temp_accounts.Count
+    $temp_sid = $temp_accounts[$temp_num]
     return $temp_sid
 }
 
@@ -204,12 +201,12 @@ function unconstrainedDelegation {
     if ($temp_num -le 0)
     {
         Write-Output "[-] COMP01 is not vulnerable to unconstrained delegation"
-        jsonify "unconstrainedDelegation" "Status" "True"
+        jsonify "unconstrainedDelegation" "Status" "False"
     }
     else {
         Write-Output "[+] COMP01 is vulnerable to unconstrained delegation"
         Set-ADAccountControl -Identity "COMP01$" -TrustedForDelegation $true
-        jsonify "unconstrainedDelegation" "Status" "False"    
+        jsonify "unconstrainedDelegation" "Status" "True"    
         }
 }
 

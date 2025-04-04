@@ -42,13 +42,26 @@ function upload{
         $flags = "-All:$true"
         Write-Host "[+] Flags was empty. Running with full functionality"
     }
-
+    Write-Host "
+        
     
+    ______ _                           
+    | ___ \ |                          
+    | |_/ / |__   __ _ _ __   ___  ___ 
+    |  __/| '_ \ / _` | '_ \ / _ \/ __|
+    | |   | | | | (_| | | | |  __/\__ \
+    \_|   |_| |_|\__,_|_| |_|\___||___/
+                                           
+                                                                             
+    "
+    Write-Host "[+] Generating AD Network"
     .\sysinternals\psexec.exe \\$dcip -i -h -u "FAKECOMPANY.LOCAL\Administrator" -p "Admin123!" powershell -Command "Import-Module C:\Users\Administrator\Desktop\Scripts\ad_genUser.ps1; Invoke-ADGen $flags"
+    Write-Host "[+] Collecting results."
     .\sysinternals\psexec.exe \\$dcip -i -h -d -u "FAKECOMPANY.LOCAL\Administrator" -p "Admin123!" powershell -Command "cmd /c 'cd C:\Users\Administrator\Desktop\Scripts&ls&.\nc.exe -lvnp 9999 < vulns.json'"
     cmd /c ".\nc.exe $dcip 9999 -w 3 > vulns.json"
+    Write-Host "[+] Results collected, generating report."
     python reportGen.py
-    Write-Host "DONE"
+    Write-Host "[+] Phanes has finished creating. Happy Hacking!"
     
 }
 
