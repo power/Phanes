@@ -13,19 +13,20 @@ $Global:Passwords = @('candance', 'reese23', 'jungle2', 'ang3ls', 'Sampson', 'ar
 $Global:Domain = "fakecompany.local"
 $Global:Created_Accounts = @();
 $Global:Created_Groups = @();
+$Global:temp_pass = @();
 $Global:svc_accts = @('SVC_MYSQL', 'SVC_HTTP', 'SVC_FTP');
 
 # All of our variables/constants, mostly just lists for us to pick random values from
 
 function jsonify($name, $par, $value){
-    $a = Get-Content 'C:\Users\Administrator\Desktop\Scripts\vulns.json' -raw | ConvertFrom-Json
-    $a.vulns | ForEach-Object {
-        if($_."Name" -eq $name)
+    $a = Get-Content 'C:\Users\Administrator\Desktop\Scripts\vulns.json' -raw | ConvertFrom-Json 
+    $a.vulns | ForEach-Object { 
+        if($_."Name" -eq $name) # if the current vuln's name equals the one passed to the function
         {
-            $_.$par = $value
+            $_.$par = $value # set the parameter under that object to equal the value e.g. Kerberoasting is the object, SID1 is the parameter and bob.rob is the value
         }
     }
-    $a | ConvertTo-Json -depth 32| set-content 'C:\Users\Administrator\Desktop\Scripts\vulns.json'
+    $a | ConvertTo-Json -depth 32| set-content 'C:\Users\Administrator\Desktop\Scripts\vulns.json' # output the value, convert to json then save to the same file we read from at the start of the function so this acts as an overwrite
 }
 function randomUserGen($temp_accounts) {
     $temp_num = Get-Random -Minimum 0 -Maximum $temp_accounts.Count
@@ -124,6 +125,11 @@ function addUser {
         $fname,$lname = $full_name.split(" ") # Split the persons name into first & last name to make our SAM username
         $sam_name = ("{0}.{1}" -f ($fname[0], $lname)).ToLower();  
         $password = middlePwGen
+        if ($i -eq 3)
+        {
+            $Global:temp_pass = "$sam_name : $password"
+            Out-File -FilePath C:\Users\Administrator\Desktop\Scripts\login_details.txt -InputObject $Global:temp_pass -Encoding ascii
+        }
         Write-Output "[+] $sam_name has middle password $password"
         $secure_password = ConvertTo-SecureString -String $password -AsPlainText -Force
         
@@ -204,10 +210,16 @@ function unconstrainedDelegation {
         jsonify "unconstrainedDelegation" "Status" "False"
     }
     else {
-        Write-Output "[+] COMP01 is vulnerable to unconstrained delegation"
         Set-ADAccountControl -Identity "COMP01$" -TrustedForDelegation $true
+        $temp_user = randomUserGen($Global:Created_Accounts)
+        Write-Output "[+] COMP01 is vulnerable to unconstrained delegation as $temp_user"
+        C:\Users\Administrator\Desktop\Scripts\psexec.exe \\comp01 -i -h -u "FAKECOMPANY.LOCAL\Administrator" -p "Admin123!" powershell -Command "Add-LocalGroupMember -Group 'Administrators' -Member $temp_user@fakecompany.local | Out-Null"
+        jsonify "unconstrainedDelegation" "SID1" "$temp_user"
         jsonify "unconstrainedDelegation" "Status" "True"    
         }
+
+    # https://community.spiceworks.com/t/powershell-script-to-add-domain-user-as-local-admin/1116523
+    # look into for making a random user a local admin
 }
 
 function addGroups {
@@ -307,6 +319,7 @@ function badAcl {
     }
     New-SmbShare @Params | Out-Null
     C:\Users\Administrator\Desktop\Scripts\psexec.exe \\comp01 -u "FAKECOMPANY.LOCAL\Administrator" -p "Admin123!" powershell -Command "cmd /c 'copy /y \\192.168.18.149\COMP01_Files\badacl.ps1 C:\\Users\Administrator\\Desktop'" | Out-Null
+    C:\Users\Administrator\Desktop\Scripts\psexec.exe \\comp01 -u "FAKECOMPANY.LOCAL\Administrator" -p "Admin123!" powershell -Command "cmd /c 'copy /y \\192.168.18.149\COMP01_Files\login_details.txt C:\\Users\Administrator\\Desktop'" | Out-Null
     C:\Users\Administrator\Desktop\Scripts\psexec.exe \\comp01 -u "FAKECOMPANY.LOCAL\Administrator" -p "Admin123!" powershell -Command "C:\Users\Administrator\Desktop\badacl.ps1" | Out-Null
     Remove-SmbShare -Name "COMP01_Files" -Force | Out-Null
     Write-Host "[+] BadACL's implemented."
@@ -377,6 +390,7 @@ function Invoke-ADGen($All, $Users) {
         dcSync
         kerberoasting
         gpo_abuse
+        secrets_Dump
     }
     elseif ($COMP) # make case for if dc + comp
     {
