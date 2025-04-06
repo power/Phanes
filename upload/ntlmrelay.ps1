@@ -8,11 +8,8 @@ ForEach ($Line in $FileContents) { # for each line of the file
 }
 
 function randomUserGen($temp_accounts) {
-    for ($i=1; $i -le 2; $i=$i+1)
-    {
-        $temp_num = Get-Random -Minimum 0 -Maximum $temp_accounts.Count
-        $temp_sid = $temp_accounts[$temp_num]
-    }
+    $temp_num = Get-Random -Minimum 0 -Maximum $temp_accounts.Count
+    $temp_sid = $temp_accounts[$temp_num]
     return $temp_sid
 }
 
