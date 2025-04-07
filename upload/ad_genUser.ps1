@@ -218,8 +218,6 @@ function unconstrainedDelegation {
         jsonify "unconstrainedDelegation" "Status" "True"    
         }
 
-    # https://community.spiceworks.com/t/powershell-script-to-add-domain-user-as-local-admin/1116523
-    # look into for making a random user a local admin
 }
 
 function addGroups {
@@ -320,6 +318,7 @@ function badAcl {
     New-SmbShare @Params | Out-Null
     C:\Users\Administrator\Desktop\Scripts\psexec.exe \\comp01 -u "FAKECOMPANY.LOCAL\Administrator" -p "Admin123!" powershell -Command "cmd /c 'copy /y \\192.168.18.149\COMP01_Files\badacl.ps1 C:\\Users\Administrator\\Desktop'" | Out-Null
     C:\Users\Administrator\Desktop\Scripts\psexec.exe \\comp01 -u "FAKECOMPANY.LOCAL\Administrator" -p "Admin123!" powershell -Command "cmd /c 'copy /y \\192.168.18.149\COMP01_Files\login_details.txt C:\\Users\Administrator\\Desktop'" | Out-Null
+    Remove-Item C:\Users\Administrator\Desktop\Scripts\login_details.txt
     C:\Users\Administrator\Desktop\Scripts\psexec.exe \\comp01 -u "FAKECOMPANY.LOCAL\Administrator" -p "Admin123!" powershell -Command "C:\Users\Administrator\Desktop\badacl.ps1" | Out-Null
     Remove-SmbShare -Name "COMP01_Files" -Force | Out-Null
     Write-Host "[+] BadACL's implemented."
@@ -342,7 +341,7 @@ function ntlmRelay {
     jsonify "ntlmRelay" "Status" "True"
 }
 
-function secrets_Dump {
+function secretsDump {
     $temp_accounts = [System.Collections.Generic.List[System.Object]]($Global:Created_Accounts)
     Enable-PSRemoting
     Install-PackageProvider -Name NuGet -Force
@@ -352,7 +351,7 @@ function secrets_Dump {
     {
         $temp_user = randomUserGen $temp_accounts
         $sid = (Get-ADUser $temp_user).Sid
-        Add-WindowsRight -Name SeBackupPrivilege -Account $sid
+        Add-WindowsRight -Name SeBackupPrivilege -Account $sid -ComputerName COMP01
         $temp_accounts.RemoveAt($temp_accounts.IndexOf($temp_user))
         Write-Host "[+] $temp_user has SeBackupPrivilege"
         jsonify "secretsDump" "SID$I" $temp_user
@@ -373,7 +372,7 @@ function Invoke-ADGen($All, $Users) {
         #Start-Sleep -Seconds 2
         addGroups
         #Start-Sleep -Seconds 2
-        secrets_Dump
+        secretsDump
         dcSync  
         kerberoasting  
         badAcl    
@@ -390,7 +389,7 @@ function Invoke-ADGen($All, $Users) {
         dcSync
         kerberoasting
         gpo_abuse
-        secrets_Dump
+        secretsDump
     }
     elseif ($COMP) # make case for if dc + comp
     {
