@@ -9,14 +9,13 @@ ForEach ($Line in $FileContents) { # for each line of the file
     $Global:SAM_Names += $Line; # add it to our list
 }
 
-$temp_num = Get-Random -Minimum 0 -Maximum 20
-$rand_num = Get-Random -Minimum 0 -Maximum 100
-$temp_pw = $Global:Passwords[$rand_num] # pick a random password
-$temp_user = $Global:SAM_Names[$temp_num] # pick a random user
-$secure_pw = ConvertTo-SecureString -String $temp_pw -AsPlainText -Force # convert it to secure string
-Set-ADAccountPassword -Identity $temp_user -NewPassword $secure_pw # change the users password
-
+$rand_sam = Get-Random -Minimum 0 -Maximum $Global:SAM_Names.Count
+$rand_pass = Get-Random -Minimum 0 -Maximum $Global:Passwords.Count
+$temp_pw = $Global:Passwords[$rand_pass] # pick a random password
+$temp_user = $Global:SAM_Names[$rand_sam] # pick a random user
+Add-ADGroupMember -Identity "Pre Merger" -Members $temp_user
+Set-ADAccountPassword -Identity (Get-ADUser -Identity $temp_user | Select-Object -ExpandProperty DistinguishedName) -Reset -NewPassword (ConvertTo-SecureString -AsPlainText $temp_pw -Force)
 
 $currentTime = Get-Date -Format "dddd MM/dd/yyyy HH:mm" # get the current time
-Set-ADUser $temp_user -Description "Password updated to $temp_pw as of  $currentTime" # add a sign so an attacker could see
+Set-ADUser $temp_user -Description "Password updated to $temp_pw as of $currentTime" # add a sign so an attacker could see
 Out-File -FilePath "C:\\Users\\Administrator\\Desktop\\Scripts\\output.txt" -InputObject "$temp_user had password changed to $temp_pw" #<----- debugging
