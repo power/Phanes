@@ -1,6 +1,6 @@
 $Global:SAM_Names = @();
 
-$FilePath = "C:\\Users\\Administrator\\Desktop\\sam_names.txt" # file that sam names will be stored in when setup is done
+$FilePath = "C:\\Users\\Administrator.FAKECOMPANY\\Desktop\\sam_names.txt" # file that sam names will be stored in when setup is done
 $FileContents = Get-Content -Path $FilePath
 
 ForEach ($Line in $FileContents) { # for each line of the file
