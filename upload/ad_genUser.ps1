@@ -14,7 +14,6 @@ $Global:Domain = "fakecompany.local"
 $Global:Created_Accounts = @();
 $Global:Created_Groups = @();
 $Global:temp_pass = @();
-$Global:svc_accts = @('SVC_MYSQL', 'SVC_HTTP', 'SVC_FTP');
 
 # All of our variables/constants, mostly just lists for us to pick random values from
 
@@ -286,17 +285,18 @@ function dcSync {
 
 function kerberoasting {
     $num = Get-Random -Minimum 0 -Maximum 10
+    $temp_accounts = [System.Collections.Generic.List[System.Object]]($Global:Created_Accounts)
     if ($num -gt -1)
     {
-        $temp_svc = randomUserGen($Global:svc_accts)
-        $temp_pw = randomUserGen($Global:Passwords)
-        $secure_password = ConvertTo-SecureString -String $temp_pw -AsPlainText -Force
-        #New-ADServiceAccount -Name $temp_svc -AccountPassword $secure_password -Enabled $true -RestrictToSingleComputer
-        New-ADUser -Name $temp_svc -SamAccountName $temp_svc -AccountPassword $secure_password -Enabled $true
-        setspn -a dc01/$temp_svc.fakecompany.local fakecompany.local\$temp_svc | Out-Null
-        Write-Host "[+] dc01/$temp_svc.$Global:Domain can be Kerberoasted with password $temp_pw"
-        jsonify "Kerberoasting" "SID1" "$temp_svc"
-        jsonify "Kerberoasting" "pw1" "$temp_pw"        
+        for ($i = 1; $i -le 2; $i++)
+        {
+            $temp_sam = randomUserGen($temp_accounts)
+            $temp_accounts.RemoveAt($temp_accounts.IndexOf($temp_sam))
+            setspn -a dc01/$temp_sam.fakecompany.local fakecompany.local\$temp_sam | Out-Null
+            Write-Host "[+] dc01/$temp_sam.$Global:Domain can be Kerberoasted"
+            jsonify "Kerberoasting" "SID$i" $temp_sam             
+        }
+       
     }
     else
     {

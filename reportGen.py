@@ -39,7 +39,7 @@ We'll pass `-dc-ip` for the DC's IP, `-request` to signify we are wanting to req
         elif (d['vulns'][i]['Name'] == "unconstrainedDelegation"):
              doc.add_heading("Unconstrained Delegation", 2)
              doc.add_paragraph(f"Uncond Status: {d['vulns'][i]['Status']}")
-             doc.add_paragraph(f"User needed: {d['vulns'][i]["SID1"]}")
+             doc.add_paragraph(f"User needed: {d['vulns'][i]['SID1']}")
              print("> Unconstrained Delegation Added")
         elif (d['vulns'][i]['Name'] == "dcSync"):
              dcsync = r"""
@@ -74,7 +74,7 @@ Since the service ticket is encrypted using the SPN's password hash, if we can d
 
 We can utilise Linux for Kerberoasting with `impacket-GetUserSPNs`. We can run `sudo impacket-GetUserSPNs -request -dc-ip DC-IP fakecompany.local/USER` where 'USER' is a set of credentials we have found on the machine which once gives us the hash, which we can then pass to Hashcat will cracks it. It's worth noting that if this command fails due to "KRB_AP_ERR_SKEW(Clock skew too great)" we need to synchronise the time between our Kali machine and the DC which we can do with `rdate`.
 """
-             kerberoasting += f"\n\nBy successfully Kerberoasting, you would have identified the `{d['vulns'][i]['SID1']}` account which when cracked, would have given the password `{d['vulns'][i]['pw1']}`"
+             kerberoasting += f"\n\nBy successfully Kerberoasting, you would have identified the accounts: `{d['vulns'][i]['SID1']}` and `{d['vulns'][i]['SID2']}`"
              doc.add_heading("Kerberoasting", 2)
              doc.add_paragraph(kerberoasting)
              print("> Kerberoasting Added")

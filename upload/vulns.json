@@ -18,7 +18,7 @@
                   {
                       "Name":  "Kerberoasting",
                       "SID1":  "",
-                      "pw1":  ""
+                      "SID2":  ""
                   },
                   {
                       "Name":  "badACL",
