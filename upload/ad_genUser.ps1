@@ -213,10 +213,12 @@ function unconstrainedDelegation {
         $temp_user = randomUserGen($Global:Created_Accounts)
         Write-Output "[+] COMP01 is vulnerable to unconstrained delegation as $temp_user"
         C:\Users\Administrator\Desktop\Scripts\psexec.exe \\comp01 -i -h -u "FAKECOMPANY.LOCAL\Administrator" -p "Admin123!" powershell -Command "Add-LocalGroupMember -Group 'Administrators' -Member $temp_user@fakecompany.local | Out-Null"
+        Enter-PSSession COMP01 # RDP into the computer to generate the ticket 
+        hostname | Out-Null # run a command for certainty
+        Exit-PSSession # close the session
         jsonify "unconstrainedDelegation" "SID1" "$temp_user"
         jsonify "unconstrainedDelegation" "Status" "True"    
         }
-
 }
 
 function addGroups {
