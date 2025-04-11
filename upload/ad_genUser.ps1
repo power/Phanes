@@ -231,14 +231,14 @@ function addGroups {
             New-ADGroup -Name "$temp_group Department" -SamAccountName ("{0} {1}" -f ($temp_group, "Department")) -GroupCategory Security -GroupScope Global -DisplayName "$temp_group" -Path "CN=Users,DC=Fakecompany,DC=Local" -Description "A group for $temp_group members!" 
             $sam_name = ("{0} {1}" -f ($temp_group, "Department"))
             $Global:Created_Groups += $sam_name
-            Write-Output "[+] Group created with SAM: $sam_name"
+            #Write-Output "[+] Group created with SAM: $sam_name"
         }
         else 
         {
             New-ADGroup -Name "$temp_group Department" -SamAccountName ("{0} {1}" -f ($temp_group, "Department")) -GroupCategory Distribution -GroupScope Global -DisplayName "$temp_group" -Path "CN=Users,DC=Fakecompany,DC=Local" -Description "A group for $temp_group members!" 
             $sam_name = ("{0} {1}" -f ($temp_group, "Department"))
             $Global:Created_Groups += $sam_name
-            Write-Output "[+] Group created with SAM: $sam_name"
+            #Write-Output "[+] Group created with SAM: $sam_name"
         }
     }
 
@@ -247,20 +247,21 @@ function addGroups {
     $temp_accounts = [System.Collections.Generic.List[System.Object]]($Global:Created_Accounts)
     for ($i=0; $i -le 20; $i=$i+1)
     {
+        $temp_account = randomUserGen($temp_accounts)
         if ($i % 3 -eq 0) 
         {
             $counter=$counter+1
             $temp_group = $Global:Created_Groups[$counter]
-            Add-ADGroupMember -Identity $temp_group -Members $temp_accounts[$i]
-            Add-ADGroupMember -Identity "Remote Desktop Users" -Members $temp_accounts[$i]
+            Add-ADGroupMember -Identity $temp_group -Members $temp_account
         }
         else 
         {
-            Add-ADGroupMember -Identity $temp_group -Members $temp_accounts[$i]
-            Add-ADGroupMember -Identity "Remote Desktop Users" -Members $temp_accounts[$i]
+            Add-ADGroupMember -Identity $temp_group -Members $temp_account
+            
         }
-        Write-Output (-join("[+] Added ", $temp_accounts[$i], " into group $temp_group"))
-        $temp_accounts.Remove($i) | Out-Null
+        Add-ADGroupMember -Identity "Remote Desktop Users" -Members $temp_account
+        Write-Output (-join("[+] Added ", $temp_account, " into group $temp_group"))
+        $temp_accounts.RemoveAt($temp_accounts.IndexOf($temp_account))
     }
 }
 
@@ -382,7 +383,8 @@ function Invoke-ADGen($All, $Users) {
     }
     elseif ($Users)
     {
-        addUser # Make 20 accounts        
+        addUser # Make 20 accounts    
+        addGroups    
     }
     elseif ($DC)
     {
