@@ -30,7 +30,7 @@
 
 param (
     [Parameter(Mandatory,HelpMessage="What is the Domain Controller's IP address?")][string]$dcip,
-    [Parameter(Mandatory,HelpMessage="What is the path to where you have the contents from Phanes stored?")][string]$path,
+    [Parameter(HelpMessage="What is the path to where you have the contents from Phanes stored? Leave empty if current directory.")][string]$path,
     [Parameter(HelpMessage="What flags would you like to run AD Generation with? If empty, will run All.")][string]$flags
 )
 
@@ -60,10 +60,10 @@ function upload{
     .\sysinternals\psexec.exe \\$dcip -i -h -d -u "FAKECOMPANY.LOCAL\Administrator" -p "Admin123!" powershell -Command "cmd /c 'cd C:\Users\Administrator\Desktop\Scripts&.\nc.exe -lvnp 9998 -w 3 > badacl.ps1'" | Out-Null
     .\sysinternals\psexec.exe \\$dcip -i -h -d -u "FAKECOMPANY.LOCAL\Administrator" -p "Admin123!" powershell -Command "cmd /c 'cd C:\Users\Administrator\Desktop\Scripts&.\nc.exe -lvnp 9997 -w 3 > ntlmrelay.ps1'" | Out-Null
     .\sysinternals\psexec.exe \\$dcip -i -h -d -u "FAKECOMPANY.LOCAL\Administrator" -p "Admin123!" powershell -Command "cmd /c 'cd C:\Users\Administrator\Desktop\Scripts&.\nc.exe -lvnp 9996 -w 3 > vulns.json'" | Out-Null
-    cmd /c ".\nc.exe $dcip 9999 < .\upload\ad_genUser.ps1"
-    cmd /c ".\nc.exe $dcip 9998 < .\upload\badacl.ps1"
-    cmd /c ".\nc.exe $dcip 9997 < .\upload\ntlmrelay.ps1"
-    cmd /c ".\nc.exe $dcip 9996 < .\upload\vulns.json"
+    cmd /c ".\nc.exe $dcip 9999 < $path.\upload\ad_genUser.ps1"
+    cmd /c ".\nc.exe $dcip 9998 < $path.\upload\badacl.ps1"
+    cmd /c ".\nc.exe $dcip 9997 < $path.\upload\ntlmrelay.ps1"
+    cmd /c ".\nc.exe $dcip 9996 < $path.\upload\vulns.json"
 
     Write-Host "[+] Generating AD Network."
     .\sysinternals\psexec.exe \\$dcip -i -h -u "FAKECOMPANY.LOCAL\Administrator" -p "Admin123!" powershell -Command "Import-Module C:\Users\Administrator\Desktop\Scripts\ad_genUser.ps1; Invoke-ADGen $flags"
