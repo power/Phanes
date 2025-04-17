@@ -13,29 +13,34 @@ print("> Starting report generation.")
 for i in range(20):
     try:
         if (d['vulns'][i]['Name'] == "ASREP"):
-            for c in range(4):
-                    try:
-                        #print(d['vulns'][i]["SID"+str(c)])
-                        sids.append(d['vulns'][i]["SID"+str(c)])
-                    except (KeyError, TypeError):
-                         continue
-            #print(sids)
-            doc.add_heading("ASREP Roasting", 2)
-            asrep_roasting = """
-The process of sending an AS-REQ so that a DC can validate a users authentication, and then reply with an AS-REP is more commonly known as Kerberos pre-authentication and prevents offline password guessing.
+             doc.add_heading("ASREP Roasting", 2)
+             if (d['vulns'][i]['Status'] == "True"):
+               for c in range(4):
+                         try:
+                              #print(d['vulns'][i]["SID"+str(c)])
+                              sids.append(d['vulns'][i]["SID"+str(c)])
+                         except (KeyError, TypeError):
+                              continue
+               #print(sids)
+               asrep_roasting = """
+     The process of sending an AS-REQ so that a DC can validate a users authentication, and then reply with an AS-REP is more commonly known as Kerberos pre-authentication and prevents offline password guessing.
 
-If you take Kerberos pre-authentication out of the picture, attackers could send AS-REQ to the domain on behalf of any AD user. The AS-REP could then be taken by the attacker and used to perform an offline password guessing attack. 
+     If you take Kerberos pre-authentication out of the picture, attackers could send AS-REQ to the domain on behalf of any AD user. The AS-REP could then be taken by the attacker and used to perform an offline password guessing attack. 
 
-There is an option in AD environments that by default, is disabled, "Do not require Kerberos preauthentication is disabled". Although, this can be enabled manually and is commonly seen in assessments to be enabled for the account or service to work. We can find accounts on an AD network that are susceptible to AS-REP roasting with the use of `impacket-GetNPUsers`.
+     There is an option in AD environments that by default, is disabled, "Do not require Kerberos preauthentication is disabled". Although, this can be enabled manually and is commonly seen in assessments to be enabled for the account or service to work. We can find accounts on an AD network that are susceptible to AS-REP roasting with the use of `impacket-GetNPUsers`.
 
-We'll pass `-dc-ip` for the DC's IP, `-request` to signify we are wanting to request the TGT, `-outputfile` for where to output the AS-REP hash. We'll then need to provide a `domain/user` to log in with, which you will have found. 
-"""
+     We'll pass `-dc-ip` for the DC's IP, `-request` to signify we are wanting to request the TGT, `-outputfile` for where to output the AS-REP hash. We'll then need to provide a `domain/user` to log in with, which you will have found. 
+     """
 
-            asrep_roasting += f"\n\n You should receive the following users password hashes: {sids[0]}, {sids[1]}, {sids[2]}"
-            doc.add_paragraph(asrep_roasting)
-            
-            print("> ASREP Roasting Added")
-            #print(d['vulns'][i]['SID1'])
+               asrep_roasting += f"\n\n You should receive the following users password hashes: {sids[0]}, {sids[1]}, {sids[2]}"
+               doc.add_paragraph(asrep_roasting)
+               
+               print("> ASREP Roasting Added")
+               #print(d['vulns'][i]['SID1'])
+             elif (d['vulns'][i]['Status'] == 'False'):
+                    asrep_roasting = """AS-REP Roasting was not present on this network."""
+                    doc.add_paragraph(asrep_roasting)
+                    print("> ASREP Roasting Added.")
         elif (d['vulns'][i]['Name'] == "unconstrainedDelegation"):
              doc.add_heading("Unconstrained Delegation", 2)
              doc.add_paragraph(f"Uncond Status: {d['vulns'][i]['Status']}")

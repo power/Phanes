@@ -71,7 +71,7 @@ function upload{
     .\sysinternals\psexec.exe \\$dcip -i -h -d -u "FAKECOMPANY.LOCAL\Administrator" -p "Admin123!" powershell -Command "cmd /c 'cd C:\Users\Administrator\Desktop\Scripts&ls&.\nc.exe -lvnp 9999 < vulns.json'"
     cmd /c ".\nc.exe $dcip 9999 -w 3 > vulns.json"
     Write-Host "[+] Results collected, generating report."
-    pip install -r requirements.txt | Out-Null
+    pip install python-docx | Out-Null
     python reportGen.py
     Write-Host "[+] Phanes has finished creating. Happy Hacking!"
     
