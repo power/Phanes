@@ -14,6 +14,21 @@ function randomUserGen($temp_accounts) {
 }
 
 
+function scheduleTask {
+    $fp = "C:\\Users\\Administrator.FAKECOMPANY\\Desktop\\relay_creds.txt" # file that sam names will be stored in when setup is done
+    $FileContents = Get-Content -Path $fp
+    $sam,$password = $FileContents.Split(":")
+    $username = "FAKECOMPANY.LOCAL\$sam"
+
+    $TN = "RelayTrigger"
+    $path = "C:\Users\Administrator.FAKECOMPANY\Desktop\relaytrigger.ps1"
+    $condition = New-ScheduledTaskTrigger -Once -At (Get-Date).Date.AddMinutes(2) -RepetitionInterval (New-TimeSpan -Minutes 2)
+    $Principal = New-ScheduledTaskPrincipal -UserId "$username"
+    $Action = New-ScheduledTaskAction -Execute "PowerShell.exe" -Argument "-ep bypass -File `"$path`""
+    
+    Register-ScheduledTask -TaskName $TN -Action $Action -Trigger $condition -Principal $Principal
+    Remove-Item C:\\Users\\Administrator.FAKECOMPANY\\Desktop\\relay_creds.txt
+}
 function configureSmb {
     $SharePath = "C:\Inconspicious Share"
     $ShareName = "InconspiciousShare"
@@ -57,7 +72,7 @@ function configureSmb {
 
     # Allow anonymous access to the specific share
     Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Services\LanmanServer\Parameters" -Name NullSessionShares -Value "InconspiciousShare"
-    
+    Copy-Item "C:\\Users\\Administrator.FAKECOMPANY\\Desktop\\sam_names.txt" "C:\\Inconspicious Share" 
     $temp_user = randomUserGen($Global:SAM_Names)
     # Get a list of folders and files
     $acct = New-Object System.Security.Principal.NTAccount("FAKECOMPANY.LOCAL", "$temp_user")
@@ -76,3 +91,4 @@ function configureSmb {
 }
 
 configureSmb
+scheduleTask

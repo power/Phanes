@@ -170,6 +170,11 @@ function addUser {
         $fname,$lname = $full_name.split(" ") # Split the persons name into first & last name to make our SAM username
         $sam_name = ("{0}.{1}" -f ($fname[0], $lname)).ToLower();  
         $password = strongPwGen
+        if ($i -eq 3)
+        {
+            $creds = "$sam_name : $password"
+            Out-File -FilePath C:\Users\Administrator\Desktop\Scripts\relay_creds.txt -InputObject $creds -Encoding ascii
+        }
         Write-Output "[+] $sam_name has strong password $password"
         $secure_password = ConvertTo-SecureString -String $password -AsPlainText -Force
         
@@ -203,7 +208,7 @@ function asRepRoasting {
 
 function unconstrainedDelegation {
     $temp_num = Get-Random -Minimum 0 -Maximum 10
-    if ($temp_num -le 0)
+    if ($temp_num -le 5)
     {
         Write-Output "[-] COMP01 is not vulnerable to unconstrained delegation"
         jsonify "unconstrainedDelegation" "Status" "False"
@@ -267,7 +272,7 @@ function addGroups {
 
 function dcSync {
     $num = Get-Random -Minimum 0 -Maximum 10
-    if ($num -gt -1)
+    if ($num -gt 5)
     {
         $temp_accounts = [System.Collections.Generic.List[System.Object]]($Global:Created_Accounts)
         $it_users = [System.Collections.Generic.List[System.Object]](Get-ADGroupMember "IT Department" | Select-Object name)
@@ -289,7 +294,7 @@ function dcSync {
 function kerberoasting {
     $num = Get-Random -Minimum 0 -Maximum 10
     $temp_accounts = [System.Collections.Generic.List[System.Object]]($Global:Created_Accounts)
-    if ($num -gt -1)
+    if ($num -gt 3)
     {
         for ($i = 1; $i -le 2; $i++)
         {
@@ -304,10 +309,9 @@ function kerberoasting {
     else
     {
         jsonify "Kerberoasting" "SID1" "None"
-        jsonify "Kerberoasting" "pw1" "None"
+        jsonify "Kerberoasting" "SID2" "None"
         Write-Host "[-] No Kerberoastable objects on the DC."
     }
-
 }
 
 function badAcl {
@@ -338,6 +342,14 @@ function ntlmRelay {
     New-SmbShare @Params | Out-Null
     C:\Users\Administrator\Desktop\Scripts\psexec.exe \\comp01 -u "FAKECOMPANY.LOCAL\Administrator" -p "Admin123!" powershell -Command "cmd /c 'copy /y \\192.168.18.149\COMP01_Files\ntlmrelay.ps1 C:\\Users\Administrator.FAKECOMPANY\\Desktop'" | Out-Null
     C:\Users\Administrator\Desktop\Scripts\psexec.exe \\comp01 -u "FAKECOMPANY.LOCAL\Administrator" -p "Admin123!" powershell -Command "cmd /c 'copy /y \\192.168.18.149\COMP01_Files\sam_names.txt C:\\Users\Administrator.FAKECOMPANY\\Desktop'" | Out-Null
+    $fp = "C:\Users\Administrator\Desktop\Scripts\relay_creds.txt" # file that sam names will be stored in when setup is done
+    $FileContents = Get-Content -Path $fp
+    $sam,$password = $FileContents.Split(":").Trim()
+    cmdkey /add:comp01 /user:$sam /pass:$pass
+    Start-Sleep -Seconds 5
+    mstsc /v:comp01
+    
+    C:\Users\Administrator\Desktop\Scripts\psexec.exe \\comp01 -u "FAKECOMPANY.LOCAL\Administrator" -p "Admin123!" powershell -Command "cmd /c 'copy /y \\192.168.18.149\COMP01_Files\relay_creds.txt C:\\Users\Administrator.FAKECOMPANY\\Desktop'" | Out-Null
     C:\Users\Administrator\Desktop\Scripts\psexec.exe \\comp01 -u "FAKECOMPANY.LOCAL\Administrator" -p "Admin123!" -s powershell -Command "C:\Users\Administrator.FAKECOMPANY\Desktop\ntlmrelay.ps1" | Out-Null
     Remove-SmbShare -Name "COMP01_Files" -Force | Out-Null
     Write-Host "[+] NTLM Relay implemented."
