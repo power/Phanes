@@ -193,16 +193,24 @@ function addUser {
 }
 
 function asRepRoasting {
+    $temp_num = Get-Random -Minimum 1 -Maximum 10
     $temp_accounts = [System.Collections.Generic.List[System.Object]]($Global:Created_Accounts)
-    for ($i=1; $i -le 3; $i=$i+1)
+    if ($temp_num -le 5)
     {
-        $temp_sid = randomUserGen($temp_accounts)
-        $temp_accounts.RemoveAt($temp_accounts.IndexOf($temp_sid))
-        Write-Output "[+] $temp_sid is rep-roastable"
-        Get-ADUser -Identity $temp_sid | Set-ADAccountControl -DoesNotRequirePreAuth:$true
-        $temp_accounts.Remove($temp_num) | Out-Null
-        jsonify "ASREP" "SID$i" $temp_sid        
+        jsonify "ASREP" "SID1" "None"
     }
+    else {
+        for ($i=1; $i -le 3; $i=$i+1)
+        {
+            $temp_sid = randomUserGen($temp_accounts)
+            $temp_accounts.RemoveAt($temp_accounts.IndexOf($temp_sid))
+            Write-Output "[+] $temp_sid is rep-roastable"
+            Get-ADUser -Identity $temp_sid | Set-ADAccountControl -DoesNotRequirePreAuth:$true
+            $temp_accounts.Remove($temp_num) | Out-Null
+            jsonify "ASREP" "SID$i" $temp_sid        
+        }
+    }
+
 
 }
 
@@ -294,7 +302,7 @@ function dcSync {
 function kerberoasting {
     $num = Get-Random -Minimum 0 -Maximum 10
     $temp_accounts = [System.Collections.Generic.List[System.Object]]($Global:Created_Accounts)
-    if ($num -gt 3)
+    if ($num -gt 5)
     {
         for ($i = 1; $i -le 2; $i++)
         {
@@ -316,44 +324,59 @@ function kerberoasting {
 
 function badAcl {
     #C:\Users\Administrator\Desktop\Scripts\psexec.exe \\comp01 powershell -Command "C:\Users\Administrator\Desktop\badacl.ps1"
-    Write-Host "[+] Implementing BadACL Vulnerability"
-    $Params = @{
-        Name = "COMP01_Files"
-        Path = "C:\Users\Administrator\Desktop\Scripts"
-        FullAccess = 'FAKECOMPANY.LOCAL\Domain Admins'
+    $num = Get-Random -Minimum 0 -Maximum 10
+    if ($num -le 6)
+    {
+        jsonify "badACL" "Status" "False"
     }
-    New-SmbShare @Params | Out-Null
-    C:\Users\Administrator\Desktop\Scripts\psexec.exe \\comp01 -u "FAKECOMPANY.LOCAL\Administrator" -p "Admin123!" powershell -Command "cmd /c 'copy /y \\192.168.18.149\COMP01_Files\badacl.ps1 C:\\Users\Administrator.FAKECOMPANY\\Desktop'" | Out-Null
-    C:\Users\Administrator\Desktop\Scripts\psexec.exe \\comp01 -u "FAKECOMPANY.LOCAL\Administrator" -p "Admin123!" powershell -Command "cmd /c 'copy /y \\192.168.18.149\COMP01_Files\login_details.txt C:\\Users\Administrator\\Desktop'" | Out-Null
-    Remove-Item C:\Users\Administrator\Desktop\Scripts\login_details.txt
-    C:\Users\Administrator\Desktop\Scripts\psexec.exe \\comp01 -u "FAKECOMPANY.LOCAL\Administrator" -p "Admin123!" powershell -Command "C:\Users\Administrator.FAKECOMPANY\Desktop\badacl.ps1" | Out-Null
-    Remove-SmbShare -Name "COMP01_Files" -Force | Out-Null
-    Write-Host "[+] BadACL's implemented."
-    jsonify "badACL" "Status" "True"
+    else {
+        Write-Host "[+] Implementing BadACL Vulnerability"
+        $Params = @{
+            Name = "COMP01_Files"
+            Path = "C:\Users\Administrator\Desktop\Scripts"
+            FullAccess = 'FAKECOMPANY.LOCAL\Domain Admins'
+        }
+        New-SmbShare @Params | Out-Null
+        C:\Users\Administrator\Desktop\Scripts\psexec.exe \\comp01 -u "FAKECOMPANY.LOCAL\Administrator" -p "Admin123!" powershell -Command "cmd /c 'copy /y \\192.168.18.149\COMP01_Files\badacl.ps1 C:\\Users\Administrator.FAKECOMPANY\\Desktop'" | Out-Null
+        C:\Users\Administrator\Desktop\Scripts\psexec.exe \\comp01 -u "FAKECOMPANY.LOCAL\Administrator" -p "Admin123!" powershell -Command "cmd /c 'copy /y \\192.168.18.149\COMP01_Files\login_details.txt C:\\Users\Administrator\\Desktop'" | Out-Null
+        Remove-Item C:\Users\Administrator\Desktop\Scripts\login_details.txt
+        C:\Users\Administrator\Desktop\Scripts\psexec.exe \\comp01 -u "FAKECOMPANY.LOCAL\Administrator" -p "Admin123!" powershell -Command "C:\Users\Administrator.FAKECOMPANY\Desktop\badacl.ps1" | Out-Null
+        Remove-SmbShare -Name "COMP01_Files" -Force | Out-Null
+        Write-Host "[+] BadACL's implemented."
+        jsonify "badACL" "Status" "True"       
+    }
 }
 
 function ntlmRelay {
-    Write-Host "[+] Implementing NTLM Relay vulnerability."
-    $Params = @{
-        Name = "COMP01_Files"
-        Path = "C:\Users\Administrator\Desktop\Scripts"
-        FullAccess = 'FAKECOMPANY.LOCAL\Domain Admins'
+    $num = Get-Random -Minimum 0 -Maximum 10
+    if ($num -le 4)
+    {
+        jsonify "ntlmRelay" "Status" "False"
     }
-    New-SmbShare @Params | Out-Null
-    C:\Users\Administrator\Desktop\Scripts\psexec.exe \\comp01 -u "FAKECOMPANY.LOCAL\Administrator" -p "Admin123!" powershell -Command "cmd /c 'copy /y \\192.168.18.149\COMP01_Files\ntlmrelay.ps1 C:\\Users\Administrator.FAKECOMPANY\\Desktop'" | Out-Null
-    C:\Users\Administrator\Desktop\Scripts\psexec.exe \\comp01 -u "FAKECOMPANY.LOCAL\Administrator" -p "Admin123!" powershell -Command "cmd /c 'copy /y \\192.168.18.149\COMP01_Files\sam_names.txt C:\\Users\Administrator.FAKECOMPANY\\Desktop'" | Out-Null
-    $fp = "C:\Users\Administrator\Desktop\Scripts\relay_creds.txt" # file that sam names will be stored in when setup is done
-    $FileContents = Get-Content -Path $fp
-    $sam,$password = $FileContents.Split(":").Trim()
-    cmdkey /add:comp01 /user:$sam /pass:$pass
-    Start-Sleep -Seconds 5
-    mstsc /v:comp01
-    
-    C:\Users\Administrator\Desktop\Scripts\psexec.exe \\comp01 -u "FAKECOMPANY.LOCAL\Administrator" -p "Admin123!" powershell -Command "cmd /c 'copy /y \\192.168.18.149\COMP01_Files\relay_creds.txt C:\\Users\Administrator.FAKECOMPANY\\Desktop'" | Out-Null
-    C:\Users\Administrator\Desktop\Scripts\psexec.exe \\comp01 -u "FAKECOMPANY.LOCAL\Administrator" -p "Admin123!" -s powershell -Command "C:\Users\Administrator.FAKECOMPANY\Desktop\ntlmrelay.ps1" | Out-Null
-    Remove-SmbShare -Name "COMP01_Files" -Force | Out-Null
-    Write-Host "[+] NTLM Relay implemented."
-    jsonify "ntlmRelay" "Status" "True"
+    else {
+        Write-Host "[+] Implementing NTLM Relay vulnerability."
+        $Params = @{
+            Name = "COMP01_Files"
+            Path = "C:\Users\Administrator\Desktop\Scripts"
+            FullAccess = 'FAKECOMPANY.LOCAL\Domain Admins'
+        }
+        New-SmbShare @Params | Out-Null
+        C:\Users\Administrator\Desktop\Scripts\psexec.exe \\comp01 -u "FAKECOMPANY.LOCAL\Administrator" -p "Admin123!" powershell -Command "cmd /c 'copy /y \\192.168.18.149\COMP01_Files\ntlmrelay.ps1 C:\\Users\Administrator.FAKECOMPANY\\Desktop'" | Out-Null
+        C:\Users\Administrator\Desktop\Scripts\psexec.exe \\comp01 -u "FAKECOMPANY.LOCAL\Administrator" -p "Admin123!" powershell -Command "cmd /c 'copy /y \\192.168.18.149\COMP01_Files\sam_names.txt C:\\Users\Administrator.FAKECOMPANY\\Desktop'" | Out-Null
+        $fp = "C:\Users\Administrator\Desktop\Scripts\relay_creds.txt" # file that sam names will be stored in when setup is done
+        $FileContents = Get-Content -Path $fp
+        $sam,$password = $FileContents.Split(":").Trim()
+        C:\Users\Administrator\Desktop\Scripts\psexec.exe \\comp01 -i -h -u "FAKECOMPANY.LOCAL\Administrator" -p "Admin123!" powershell -Command "Add-LocalGroupMember -Group 'Administrators' -Member $sam@fakecompany.local | Out-Null"
+        cmdkey /add:comp01 /user:$sam /pass:$password
+        Start-Sleep -Seconds 5
+        mstsc /v:comp01
+        
+        C:\Users\Administrator\Desktop\Scripts\psexec.exe \\comp01 -u "FAKECOMPANY.LOCAL\Administrator" -p "Admin123!" powershell -Command "cmd /c 'copy /y \\192.168.18.149\COMP01_Files\relay_creds.txt C:\\Users\Administrator.FAKECOMPANY\\Desktop'" | Out-Null
+        C:\Users\Administrator\Desktop\Scripts\psexec.exe \\comp01 -u "FAKECOMPANY.LOCAL\Administrator" -p "Admin123!" -s powershell -Command "C:\Users\Administrator.FAKECOMPANY\Desktop\ntlmrelay.ps1" | Out-Null
+        Remove-SmbShare -Name "COMP01_Files" -Force | Out-Null
+        Write-Host "[+] NTLM Relay implemented."
+        jsonify "ntlmRelay" "Status" "True"
+    }
 }
 
 function secretsDump {
@@ -387,7 +410,7 @@ function Invoke-ADGen($All, $Users) {
         #Start-Sleep -Seconds 2
         addGroups
         #Start-Sleep -Seconds 2
-        secretsDump
+        #secretsDump
         dcSync  
         kerberoasting  
         badAcl    
