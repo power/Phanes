@@ -1,3 +1,8 @@
+param (
+    [switch]$SMB,
+    [switch]$All
+)
+
 $Global:SAM_Names = @();
 
 $FilePath = "C:\\Users\\Administrator.FAKECOMPANY\\Desktop\\sam_names.txt" # file that sam names will be stored in when setup is done
@@ -22,12 +27,12 @@ function scheduleTask {
 
     $TN = "RelayTrigger"
     $path = "C:\Users\Administrator.FAKECOMPANY\Desktop\relaytrigger.ps1"
-    $condition = New-ScheduledTaskTrigger -Once -At (Get-Date).Date.AddMinutes(2) -RepetitionInterval (New-TimeSpan -Minutes 2)
-    $Principal = New-ScheduledTaskPrincipal -UserId "$username"
-    $Action = New-ScheduledTaskAction -Execute "PowerShell.exe" -Argument "-ep bypass -File `"$path`""
+    $condition = New-ScheduledTaskTrigger -Once -At (Get-Date).Date.AddMinutes(2) -RepetitionInterval (New-TimeSpan -Minutes 2) # once every 2 minutes, with a 2 minute break
+    $Principal = New-ScheduledTaskPrincipal -UserId "$username" # set a random user to be the author of the script, meaning their hash will be given out when the trigger runs
+    $Action = New-ScheduledTaskAction -Execute "PowerShell.exe" -Argument "-ep bypass -File `"$path`"" #run the script 
     
-    Register-ScheduledTask -TaskName $TN -Action $Action -Trigger $condition -Principal $Principal
-    Remove-Item C:\\Users\\Administrator.FAKECOMPANY\\Desktop\\relay_creds.txt
+    Register-ScheduledTask -TaskName $TN -Action $Action -Trigger $condition -Principal $Principal # create the scheduled task
+    Remove-Item C:\\Users\\Administrator.FAKECOMPANY\\Desktop\\relay_creds.txt #remove the creds so no artefact
 }
 function configureSmb {
     $SharePath = "C:\Inconspicious Share"
@@ -90,5 +95,12 @@ function configureSmb {
     Set-Acl -Path "C:\Inconspicious Share" -AclObject $acl
 }
 
-configureSmb
-scheduleTask
+
+if ($SMB)
+{
+    configureSmb
+}
+elseif ($All) {
+    configureSmb
+    scheduleTask
+}

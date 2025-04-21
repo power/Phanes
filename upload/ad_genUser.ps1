@@ -189,7 +189,7 @@ function addUser {
         Add-ADGroupMember -Identity "Post Post Merger" -Members $sam_name
     }
 
-    Out-File -FilePath "C:\\Users\\Administrator\\Desktop\\Scripts\\sam_names.txt" -InputObject $Global:Created_Accounts
+    Out-File -FilePath "C:\\Users\\Administrator\\Desktop\\Scripts\\sam_names.txt" -InputObject $Global:Created_Accounts # put the entire list into a text file
 }
 
 function asRepRoasting {
@@ -197,15 +197,17 @@ function asRepRoasting {
     $temp_accounts = [System.Collections.Generic.List[System.Object]]($Global:Created_Accounts)
     if ($temp_num -le 5)
     {
+        jsonify "ASREP" "Status" "False"
         jsonify "ASREP" "SID1" "None"
     }
-    else {
-        for ($i=1; $i -le 3; $i=$i+1)
+    else { # if we hit our percentage
+        jsonify "ASREP" "Status" "True"
+        for ($i=1; $i -le 3; $i=$i+1) # for 2 users
         {
             $temp_sid = randomUserGen($temp_accounts)
-            $temp_accounts.RemoveAt($temp_accounts.IndexOf($temp_sid))
+            $temp_accounts.RemoveAt($temp_accounts.IndexOf($temp_sid)) # remove the user from our temporary list so we don't pick them twice
             Write-Output "[+] $temp_sid is rep-roastable"
-            Get-ADUser -Identity $temp_sid | Set-ADAccountControl -DoesNotRequirePreAuth:$true
+            Get-ADUser -Identity $temp_sid | Set-ADAccountControl -DoesNotRequirePreAuth:$true # get the user and disable pre-authentication
             $temp_accounts.Remove($temp_num) | Out-Null
             jsonify "ASREP" "SID$i" $temp_sid        
         }
@@ -220,12 +222,13 @@ function unconstrainedDelegation {
     {
         Write-Output "[-] COMP01 is not vulnerable to unconstrained delegation"
         jsonify "unconstrainedDelegation" "Status" "False"
+        jsonify "unconstrainedDelegation" "SID1" "None"
     }
     else {
-        Set-ADAccountControl -Identity "COMP01$" -TrustedForDelegation $true
+        Set-ADAccountControl -Identity "COMP01$" -TrustedForDelegation $true # allow the machine to be delegated to
         $temp_user = randomUserGen($Global:Created_Accounts)
         Write-Output "[+] COMP01 is vulnerable to unconstrained delegation as $temp_user"
-        C:\Users\Administrator\Desktop\Scripts\psexec.exe \\comp01 -i -h -u "FAKECOMPANY.LOCAL\Administrator" -p "Admin123!" powershell -Command "Add-LocalGroupMember -Group 'Administrators' -Member $temp_user@fakecompany.local | Out-Null"
+        C:\Users\Administrator\Desktop\Scripts\psexec.exe \\comp01 -i -h -u "FAKECOMPANY.LOCAL\Administrator" -p "Admin123!" powershell -Command "Add-LocalGroupMember -Group 'Administrators' -Member $temp_user@fakecompany.local | Out-Null" # add the user as a local admin so they can get the tgt's
         Enter-PSSession COMP01 # RDP into the computer to generate the ticket 
         hostname | Out-Null # run a command for certainty
         Exit-PSSession # close the session
@@ -261,20 +264,20 @@ function addGroups {
     for ($i=0; $i -le 20; $i=$i+1)
     {
         $temp_account = randomUserGen($temp_accounts)
-        if ($i % 3 -eq 0) 
+        if ($i % 3 -eq 0) # if the number is divisible by 3, move onto the next group
         {
-            $counter=$counter+1
-            $temp_group = $Global:Created_Groups[$counter]
-            Add-ADGroupMember -Identity $temp_group -Members $temp_account
+            $counter=$counter+1 
+            $temp_group = $Global:Created_Groups[$counter]# pick a new group
+            Add-ADGroupMember -Identity $temp_group -Members $temp_account # add a user to that group
         }
         else 
         {
-            Add-ADGroupMember -Identity $temp_group -Members $temp_account
+            Add-ADGroupMember -Identity $temp_group -Members $temp_account # continue adding to the same group
             
         }
-        Add-ADGroupMember -Identity "Remote Desktop Users" -Members $temp_account
-        Write-Output (-join("[+] Added ", $temp_account, " into group $temp_group"))
-        $temp_accounts.RemoveAt($temp_accounts.IndexOf($temp_account))
+        Add-ADGroupMember -Identity "Remote Desktop Users" -Members $temp_account # allow them to remotely logged into
+        Write-Output (-join("[+] Added ", $temp_account, " into group $temp_group")) # needs to be done this way because of the different strings
+        $temp_accounts.RemoveAt($temp_accounts.IndexOf($temp_account)) # remove the user from the temporary list 
     }
 }
 
@@ -283,13 +286,13 @@ function dcSync {
     if ($num -gt 5)
     {
         $temp_accounts = [System.Collections.Generic.List[System.Object]]($Global:Created_Accounts)
-        $it_users = [System.Collections.Generic.List[System.Object]](Get-ADGroupMember "IT Department" | Select-Object name)
-        $it_users = $temp_accounts -replace '@{name=', '' -replace '}', ''
+        $it_users = [System.Collections.Generic.List[System.Object]](Get-ADGroupMember "IT Department" | Select-Object name) # get each user's username that is in the IT department
+        $it_users = $temp_accounts -replace '@{name=', '' -replace '}', '' # strip the string for the extra stuff
         $num = Get-Random -Minimum 0 -Maximum 2
-        $vuln_user = $it_users[$num]
-        Add-ObjectACL -PrincipalIdentity $it_users[$num] -Rights DCSync
+        $vuln_user = $it_users[$num] # pick a random user from the IT department group
+        Add-ObjectACL -PrincipalIdentity $it_users[$num] -Rights DCSync # use powerview's functionality to give them DCSync rights
         $temp_sid = randomUserGen($temp_accounts)
-        Add-ObjectACL -PrincipalIdentity $temp_sid -TargetIdentity $vuln_user -Rights All
+        Add-ObjectACL -PrincipalIdentity $temp_sid -TargetIdentity $vuln_user -Rights All # give another user genericall over the dcsync user
         Write-Host "[+] $vuln_user can perform DCSync attack."
         jsonify "dcSync" "SID1" "$vuln_user"        
     }
@@ -308,7 +311,7 @@ function kerberoasting {
         {
             $temp_sam = randomUserGen($temp_accounts)
             $temp_accounts.RemoveAt($temp_accounts.IndexOf($temp_sam))
-            setspn -a dc01/$temp_sam.fakecompany.local fakecompany.local\$temp_sam | Out-Null
+            setspn -a dc01/$temp_sam.fakecompany.local fakecompany.local\$temp_sam | Out-Null # give the user an SPN so it can be kerberoasted
             Write-Host "[+] dc01/$temp_sam.$Global:Domain can be Kerberoasted"
             jsonify "Kerberoasting" "SID$i" $temp_sam             
         }
@@ -327,21 +330,22 @@ function badAcl {
     $num = Get-Random -Minimum 0 -Maximum 10
     if ($num -le 6)
     {
+        Write-Host "[-] BadACL's not present."
         jsonify "badACL" "Status" "False"
     }
     else {
         Write-Host "[+] Implementing BadACL Vulnerability"
-        $Params = @{
+        $Params = @{ # create a smb share that points to this folder and gives any Domain Admin full rwx access
             Name = "COMP01_Files"
             Path = "C:\Users\Administrator\Desktop\Scripts"
             FullAccess = 'FAKECOMPANY.LOCAL\Domain Admins'
         }
         New-SmbShare @Params | Out-Null
-        C:\Users\Administrator\Desktop\Scripts\psexec.exe \\comp01 -u "FAKECOMPANY.LOCAL\Administrator" -p "Admin123!" powershell -Command "cmd /c 'copy /y \\192.168.18.149\COMP01_Files\badacl.ps1 C:\\Users\Administrator.FAKECOMPANY\\Desktop'" | Out-Null
-        C:\Users\Administrator\Desktop\Scripts\psexec.exe \\comp01 -u "FAKECOMPANY.LOCAL\Administrator" -p "Admin123!" powershell -Command "cmd /c 'copy /y \\192.168.18.149\COMP01_Files\login_details.txt C:\\Users\Administrator\\Desktop'" | Out-Null
-        Remove-Item C:\Users\Administrator\Desktop\Scripts\login_details.txt
-        C:\Users\Administrator\Desktop\Scripts\psexec.exe \\comp01 -u "FAKECOMPANY.LOCAL\Administrator" -p "Admin123!" powershell -Command "C:\Users\Administrator.FAKECOMPANY\Desktop\badacl.ps1" | Out-Null
-        Remove-SmbShare -Name "COMP01_Files" -Force | Out-Null
+        C:\Users\Administrator\Desktop\Scripts\psexec.exe \\comp01 -u "FAKECOMPANY.LOCAL\Administrator" -p "Admin123!" powershell -Command "cmd /c 'copy /y \\192.168.18.149\COMP01_Files\badacl.ps1 C:\\Users\Administrator.FAKECOMPANY\\Desktop'" | Out-Null # copy the powershell script across
+        C:\Users\Administrator\Desktop\Scripts\psexec.exe \\comp01 -u "FAKECOMPANY.LOCAL\Administrator" -p "Admin123!" powershell -Command "cmd /c 'copy /y \\192.168.18.149\COMP01_Files\login_details.txt C:\\Users\Administrator\\Desktop'" | Out-Null # copy the file to be found from badacl
+        Remove-Item C:\Users\Administrator\Desktop\Scripts\login_details.txt # remove the artefact 
+        C:\Users\Administrator\Desktop\Scripts\psexec.exe \\comp01 -u "FAKECOMPANY.LOCAL\Administrator" -p "Admin123!" powershell -Command "C:\Users\Administrator.FAKECOMPANY\Desktop\badacl.ps1" | Out-Null #run the powershell script
+        Remove-SmbShare -Name "COMP01_Files" -Force | Out-Null # remove the smb share so it can't be enumerated
         Write-Host "[+] BadACL's implemented."
         jsonify "badACL" "Status" "True"       
     }
@@ -351,10 +355,7 @@ function ntlmRelay {
     $num = Get-Random -Minimum 0 -Maximum 10
     if ($num -le 4)
     {
-        jsonify "ntlmRelay" "Status" "False"
-    }
-    else {
-        Write-Host "[+] Implementing NTLM Relay vulnerability."
+        Write-Host "[+] Implementing anonymous SMB share"
         $Params = @{
             Name = "COMP01_Files"
             Path = "C:\Users\Administrator\Desktop\Scripts"
@@ -362,17 +363,24 @@ function ntlmRelay {
         }
         New-SmbShare @Params | Out-Null
         C:\Users\Administrator\Desktop\Scripts\psexec.exe \\comp01 -u "FAKECOMPANY.LOCAL\Administrator" -p "Admin123!" powershell -Command "cmd /c 'copy /y \\192.168.18.149\COMP01_Files\ntlmrelay.ps1 C:\\Users\Administrator.FAKECOMPANY\\Desktop'" | Out-Null
+        C:\Users\Administrator\Desktop\Scripts\psexec.exe \\comp01 -u "FAKECOMPANY.LOCAL\Administrator" -p "Admin123!" powershell -Command "cmd /c 'copy /y \\192.168.18.149\COMP01_Files\sam_names.txt C:\\Users\Administrator.FAKECOMPANY\\Desktop'" | Out-Null # needed for ntlmrelay to work
+        C:\Users\Administrator\Desktop\Scripts\psexec.exe \\comp01 -u "FAKECOMPANY.LOCAL\Administrator" -p "Admin123!" -s powershell -Command "C:\Users\Administrator.FAKECOMPANY\Desktop\ntlmrelay.ps1 -SMB:$true" | Out-Null # run ntlmrelay script but just implement the SMB share for basic enumeration
+        Write-Host "[-] NTLM Relay not present."
+        jsonify "ntlmRelay" "Status" "False"
+    }
+    else {
+        Write-Host "[+] Implementing NTLM Relay vulnerability."
+        C:\Users\Administrator\Desktop\Scripts\psexec.exe \\comp01 -u "FAKECOMPANY.LOCAL\Administrator" -p "Admin123!" powershell -Command "cmd /c 'copy /y \\192.168.18.149\COMP01_Files\ntlmrelay.ps1 C:\\Users\Administrator.FAKECOMPANY\\Desktop'" | Out-Null
         C:\Users\Administrator\Desktop\Scripts\psexec.exe \\comp01 -u "FAKECOMPANY.LOCAL\Administrator" -p "Admin123!" powershell -Command "cmd /c 'copy /y \\192.168.18.149\COMP01_Files\sam_names.txt C:\\Users\Administrator.FAKECOMPANY\\Desktop'" | Out-Null
         $fp = "C:\Users\Administrator\Desktop\Scripts\relay_creds.txt" # file that sam names will be stored in when setup is done
-        $FileContents = Get-Content -Path $fp
-        $sam,$password = $FileContents.Split(":").Trim()
-        C:\Users\Administrator\Desktop\Scripts\psexec.exe \\comp01 -i -h -u "FAKECOMPANY.LOCAL\Administrator" -p "Admin123!" powershell -Command "Add-LocalGroupMember -Group 'Administrators' -Member $sam@fakecompany.local | Out-Null"
-        cmdkey /add:comp01 /user:$sam /pass:$password
+        $FileContents = Get-Content -Path $fp # get the credentials 
+        $sam,$password = $FileContents.Split(":").Trim() # store the username and password
+        C:\Users\Administrator\Desktop\Scripts\psexec.exe \\comp01 -i -h -u "FAKECOMPANY.LOCAL\Administrator" -p "Admin123!" powershell -Command "Add-LocalGroupMember -Group 'Administrators' -Member $sam@fakecompany.local | Out-Null" # make them a local admin so we can simulate them being on the machine
+        cmdkey /add:comp01 /user:$sam /pass:$password # allow us to automate logging into rdp
         Start-Sleep -Seconds 5
-        mstsc /v:comp01
-        
-        C:\Users\Administrator\Desktop\Scripts\psexec.exe \\comp01 -u "FAKECOMPANY.LOCAL\Administrator" -p "Admin123!" powershell -Command "cmd /c 'copy /y \\192.168.18.149\COMP01_Files\relay_creds.txt C:\\Users\Administrator.FAKECOMPANY\\Desktop'" | Out-Null
-        C:\Users\Administrator\Desktop\Scripts\psexec.exe \\comp01 -u "FAKECOMPANY.LOCAL\Administrator" -p "Admin123!" -s powershell -Command "C:\Users\Administrator.FAKECOMPANY\Desktop\ntlmrelay.ps1" | Out-Null
+        mstsc /v:comp01 # log into rdp
+        C:\Users\Administrator\Desktop\Scripts\psexec.exe \\comp01 -u "FAKECOMPANY.LOCAL\Administrator" -p "Admin123!" powershell -Command "cmd /c 'copy /y \\192.168.18.149\COMP01_Files\relay_creds.txt C:\\Users\Administrator.FAKECOMPANY\\Desktop'" | Out-Null #copy the creds so they can be used when creating the service
+        C:\Users\Administrator\Desktop\Scripts\psexec.exe \\comp01 -u "FAKECOMPANY.LOCAL\Administrator" -p "Admin123!" -s powershell -Command "C:\Users\Administrator.FAKECOMPANY\Desktop\ntlmrelay.ps1 -All:$true" | Out-Null # generate the smb share and the ntlm trigger
         Remove-SmbShare -Name "COMP01_Files" -Force | Out-Null
         Write-Host "[+] NTLM Relay implemented."
         jsonify "ntlmRelay" "Status" "True"
@@ -389,7 +397,7 @@ function secretsDump {
     {
         $temp_user = randomUserGen $temp_accounts
         $sid = (Get-ADUser $temp_user).Sid
-        Add-WindowsRight -Name SeBackupPrivilege -Account $sid -ComputerName COMP01
+        Add-WindowsRight -Name SeBackupPrivilege -Account $sid -ComputerName COMP01 # doesnt seem to add the rights
         $temp_accounts.RemoveAt($temp_accounts.IndexOf($temp_user))
         Write-Host "[+] $temp_user has SeBackupPrivilege"
         jsonify "secretsDump" "SID$I" $temp_user
