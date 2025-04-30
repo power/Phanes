@@ -353,15 +353,15 @@ function badAcl {
 
 function ntlmRelay {
     $num = Get-Random -Minimum 0 -Maximum 10
+    $Params = @{
+        Name = "COMP01_Files"
+        Path = "C:\Users\Administrator\Desktop\Scripts"
+        FullAccess = 'FAKECOMPANY.LOCAL\Domain Admins'
+    }
+    New-SmbShare @Params | Out-Null
     if ($num -le 4)
     {
         Write-Host "[+] Implementing anonymous SMB share"
-        $Params = @{
-            Name = "COMP01_Files"
-            Path = "C:\Users\Administrator\Desktop\Scripts"
-            FullAccess = 'FAKECOMPANY.LOCAL\Domain Admins'
-        }
-        New-SmbShare @Params | Out-Null
         C:\Users\Administrator\Desktop\Scripts\psexec.exe \\comp01 -u "FAKECOMPANY.LOCAL\Administrator" -p "Admin123!" powershell -Command "cmd /c 'copy /y \\192.168.18.149\COMP01_Files\ntlmrelay.ps1 C:\\Users\Administrator.FAKECOMPANY\\Desktop'" | Out-Null
         C:\Users\Administrator\Desktop\Scripts\psexec.exe \\comp01 -u "FAKECOMPANY.LOCAL\Administrator" -p "Admin123!" powershell -Command "cmd /c 'copy /y \\192.168.18.149\COMP01_Files\sam_names.txt C:\\Users\Administrator.FAKECOMPANY\\Desktop'" | Out-Null # needed for ntlmrelay to work
         C:\Users\Administrator\Desktop\Scripts\psexec.exe \\comp01 -u "FAKECOMPANY.LOCAL\Administrator" -p "Admin123!" -s powershell -Command "C:\Users\Administrator.FAKECOMPANY\Desktop\ntlmrelay.ps1 -SMB:$true" | Out-Null # run ntlmrelay script but just implement the SMB share for basic enumeration
@@ -381,10 +381,10 @@ function ntlmRelay {
         mstsc /v:comp01 # log into rdp
         C:\Users\Administrator\Desktop\Scripts\psexec.exe \\comp01 -u "FAKECOMPANY.LOCAL\Administrator" -p "Admin123!" powershell -Command "cmd /c 'copy /y \\192.168.18.149\COMP01_Files\relay_creds.txt C:\\Users\Administrator.FAKECOMPANY\\Desktop'" | Out-Null #copy the creds so they can be used when creating the service
         C:\Users\Administrator\Desktop\Scripts\psexec.exe \\comp01 -u "FAKECOMPANY.LOCAL\Administrator" -p "Admin123!" -s powershell -Command "C:\Users\Administrator.FAKECOMPANY\Desktop\ntlmrelay.ps1 -All:$true" | Out-Null # generate the smb share and the ntlm trigger
-        Remove-SmbShare -Name "COMP01_Files" -Force | Out-Null
         Write-Host "[+] NTLM Relay implemented."
         jsonify "ntlmRelay" "Status" "True"
     }
+    Remove-SmbShare -Name "COMP01_Files" -Force | Out-Null
 }
 
 function secretsDump {
