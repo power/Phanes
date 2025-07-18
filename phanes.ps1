@@ -70,6 +70,8 @@ function upload{
 
     Write-Host "[+] Generating AD Network."
     .\sysinternals\psexec.exe \\$dcip -i -h -u "FAKECOMPANY.LOCAL\Administrator" -p "Admin123!" powershell -Command "Import-Module C:\Users\Administrator\Desktop\Scripts\ad_genUser.ps1; Invoke-ADGen $flags" # generate the network
+    Write-Host "[+] Restarting machines to implementing GPO's."
+    Start-Sleep -Seconds 120
     Write-Host "[+] Collecting results."
     .\sysinternals\psexec.exe \\$dcip -i -h -d -u "FAKECOMPANY.LOCAL\Administrator" -p "Admin123!" powershell -Command "cmd /c 'cd C:\Users\Administrator\Desktop\Scripts&ls&.\nc.exe -lvnp 9999 < vulns.json'" # start a listener which will pass the contents of the vulnerability file
     cmd /c ".\nc.exe $dcip 9999 -w 3 > vulns.json" #download the file

@@ -78,6 +78,7 @@ Assuming we're performing this attack from our Kali machine, we'll pass `-just-d
              doc.add_paragraph(dcsync)
              print("> DCSync Added")
         elif (vulns['vulns'][i]['Name'] == "Kerberoasting"):
+             doc.add_heading("Kerberoasting", 2)
              if(vulns['vulns'][i]['SID1'] == "None"):
                  doc.add_paragraph("Kerberoasting was not possible on the network.")
              else:
@@ -89,7 +90,7 @@ Assuming we're performing this attack from our Kali machine, we'll pass `-just-d
      We can utilise Linux for Kerberoasting with `impacket-GetUserSPNs`. We can run `sudo impacket-GetUserSPNs -request -dc-ip DC-IP fakecompany.local/USER` where 'USER' is a set of credentials we have found on the machine which once gives us the hash, which we can then pass to Hashcat will cracks it. It's worth noting that if this command fails due to "KRB_AP_ERR_SKEW(Clock skew too great)" we need to synchronise the time between our Kali machine and the DC which we can do with `rdate`.
      """
                kerberoasting += f"\n\nBy successfully Kerberoasting, you would have identified the accounts: `{vulns['vulns'][i]['SID1']}` and `{vulns['vulns'][i]['SID2']}`"
-               doc.add_heading("Kerberoasting", 2)
+
                doc.add_paragraph(kerberoasting)
                print("> Kerberoasting Added")
         elif (vulns['vulns'][i]['Name'] == "badACL"):
@@ -97,7 +98,6 @@ Assuming we're performing this attack from our Kali machine, we'll pass `-just-d
              if (vulns['vulns'][i]['Status'] == "True"):         
                 doc.add_paragraph("Bad ACLs were present on this machine which would have given the user an additional set of credentials to enumerate the network through.")
              else:
-                  doc.add_heading("BadACL's", 2)
                   doc.add_paragraph("The ability to take advantage of BadACL vulnerabilities was not present on this machine.")
              print("> BadACL's Added")
         elif (vulns['vulns'][i]['Name'] == "ntlmRelay"):
