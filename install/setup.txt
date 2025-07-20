@@ -1,0 +1,4 @@
+..\sysinternals\psexec.exe \\$dcip -i -h -d -u "FAKECOMPANY.LOCAL\Administrator" -p "Admin123!" powershell -Command "cmd /c 'cd C:\Users\Administrator\Desktop\Scripts&.\nc.exe -lvnp 9999 -w 3 > ad_genUser.ps1'"
+..\sysinternals\psexec.exe \\$dcip -i -h -d -u "FAKECOMPANY.LOCAL\Administrator" -p "Admin123!" powershell -Command "cmd /c 'cd C:\Users\Administrator\Desktop\Scripts&.\nc.exe -lvnp 9998 -w 3 > badacl.ps1'" 
+..\sysinternals\psexec.exe \\$dcip -i -h -d -u "FAKECOMPANY.LOCAL\Administrator" -p "Admin123!" powershell -Command "cmd /c 'cd C:\Users\Administrator\Desktop\Scripts&.\nc.exe -lvnp 9997 -w 3 > ntlmrelay.ps1'" 
+..\sysinternals\psexec.exe \\$dcip -i -h -d -u "FAKECOMPANY.LOCAL\Administrator" -p "Admin123!" powershell -Command "cmd /c 'cd C:\Users\Administrator\Desktop\Scripts&.\nc.exe -lvnp 9996 -w 3 > vulns.json'"

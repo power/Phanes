@@ -42,6 +42,10 @@ function upload{
         $flags = "-All:$true"
         Write-Host "[+] Flags was empty. Running with full functionality"
     }
+    if (!$path)
+    {
+        $path = "."
+    }
     Write-Host "
         
     
@@ -54,24 +58,22 @@ function upload{
                                            
                                                                              
     "
-
-    Write-Host "[+] Copying files."
-    .\sysinternals\psexec.exe \\$dcip -i -h -d -u "FAKECOMPANY.LOCAL\Administrator" -p "Admin123!" powershell -Command "cmd /c 'cd C:\Users\Administrator\Desktop\Scripts&.\nc.exe -lvnp 9999 -w 3 > ad_genUser.ps1'" | Out-Null
-    .\sysinternals\psexec.exe \\$dcip -i -h -d -u "FAKECOMPANY.LOCAL\Administrator" -p "Admin123!" powershell -Command "cmd /c 'cd C:\Users\Administrator\Desktop\Scripts&.\nc.exe -lvnp 9998 -w 3 > badacl.ps1'" | Out-Null
-    .\sysinternals\psexec.exe \\$dcip -i -h -d -u "FAKECOMPANY.LOCAL\Administrator" -p "Admin123!" powershell -Command "cmd /c 'cd C:\Users\Administrator\Desktop\Scripts&.\nc.exe -lvnp 9997 -w 3 > ntlmrelay.ps1'" | Out-Null
-    .\sysinternals\psexec.exe \\$dcip -i -h -d -u "FAKECOMPANY.LOCAL\Administrator" -p "Admin123!" powershell -Command "cmd /c 'cd C:\Users\Administrator\Desktop\Scripts&.\nc.exe -lvnp 9996 -w 3 > vulns.json'" | Out-Null
+    Set-Location ./install
+    Set-Content ip.txt $dcip
+    python install.py 
     # start listeners so we can download the files to DC01
-
-    cmd /c ".\nc.exe $dcip 9999 < $path.\upload\ad_genUser.ps1"
-    cmd /c ".\nc.exe $dcip 9998 < $path.\upload\badacl.ps1"
-    cmd /c ".\nc.exe $dcip 9997 < $path.\upload\ntlmrelay.ps1"
-    cmd /c ".\nc.exe $dcip 9996 < $path.\upload\vulns.json"
+    Set-Location ../
+    
+    cmd /c ".\nc.exe $dcip 9999 < $path\upload\ad_genUser.ps1"
+    cmd /c ".\nc.exe $dcip 9998 < $path\upload\badacl.ps1"
+    cmd /c ".\nc.exe $dcip 9997 < $path\upload\ntlmrelay.ps1"
+    cmd /c ".\nc.exe $dcip 9996 < $path\upload\vulns.json"
     # connect to the listeners and pass the contents
 
     Write-Host "[+] Generating AD Network."
     .\sysinternals\psexec.exe \\$dcip -i -h -u "FAKECOMPANY.LOCAL\Administrator" -p "Admin123!" powershell -Command "Import-Module C:\Users\Administrator\Desktop\Scripts\ad_genUser.ps1; Invoke-ADGen $flags" # generate the network
-    Write-Host "[+] Restarting machines to implementing GPO's."
-    Start-Sleep -Seconds 120
+    Write-Host "[+] Restarting machines to implement GPO's."
+    Start-Sleep -Seconds 30
     Write-Host "[+] Collecting results."
     .\sysinternals\psexec.exe \\$dcip -i -h -d -u "FAKECOMPANY.LOCAL\Administrator" -p "Admin123!" powershell -Command "cmd /c 'cd C:\Users\Administrator\Desktop\Scripts&ls&.\nc.exe -lvnp 9999 < vulns.json'" # start a listener which will pass the contents of the vulnerability file
     cmd /c ".\nc.exe $dcip 9999 -w 3 > vulns.json" #download the file
@@ -79,7 +81,7 @@ function upload{
     pip install python-docx | Out-Null # try and install python-docx incase the user doesnt have it already
     python reportGen.py # generate the report
     Write-Host "[+] Phanes has finished creating. Happy Hacking!"
-    
+    Remove-Item ./install/ip.txt
 }
 
 upload
